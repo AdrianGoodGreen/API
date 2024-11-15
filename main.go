@@ -37,7 +37,7 @@ func main() {
 	router.DELETE("/activities/:id", deleteActivity)     // Eliminar una actividad
 	router.POST("/activities/:id/enroll", enrollStudent) // Inscribir a un estudiante en una actividad
 
-	router.Run("localhost:8083")
+	router.Run(":8083")
 }
 
 // Obtener todas las actividades
