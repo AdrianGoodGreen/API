@@ -14,6 +14,9 @@ RUN go mod download
 # Copiar todos los archivos fuente de Go
 COPY . .
 
+# Ejecuta las pruebas
+RUN go test -v ./...
+
 # Construir la aplicación
 RUN go build -o main .
 
