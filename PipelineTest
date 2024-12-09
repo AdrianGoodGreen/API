@@ -1,0 +1,82 @@
+pipeline {
+    agent any
+    stages {
+        stage('Build and Test') {
+            steps {
+                script {
+                    // Construir la imagen y ejecutar las pruebas
+                    try {
+                        sh 'docker build -t api-image .'
+                    } catch (Exception err) {
+                        error("Error en la construcción o pruebas. Revisa el Dockerfile y los test.")
+                    }
+                }
+            }
+        }
+        stage('Run API') {
+            steps {
+                script {
+                    // Ejecutar el contenedor en segundo plano
+                    sh 'docker run -d --name api-container -p 8083:8083 api-image'
+                    
+                    // Verificar que el contenedor está corriendo y el puerto 8083 está mapeado
+                    def containerPorts = sh(script: "docker ps --filter 'name=api-container' --format '{{.Ports}}'", returnStdout: true).trim()
+                    echo "Contenedor puerto mapeado: ${containerPorts}"
+                    
+                    // Verificar que el puerto 8083 está mapeado
+                    if (!containerPorts.contains("0.0.0.0:8083->8083/tcp")) {
+                        error("El puerto 8083 no está correctamente mapeado. Verifica la configuración del contenedor.")
+                    }
+
+                    // Esperar un tiempo adicional para asegurarse de que la API esté lista
+                    sleep 30
+                }
+            }
+        }
+        stage('Integration Tests') {
+            steps {
+                script {
+                    // Verificar si el contenedor está corriendo
+                    def containerStatus = sh(script: "docker inspect -f '{{.State.Running}}' api-container", returnStdout: true).trim()
+                    if (containerStatus == 'true') {
+                        // Intentar realizar la solicitud
+                        def retries = 10
+                        def success = false
+                        for (int i = 0; i < retries; i++) {
+                            try {
+                                // Intentar con IP del contenedor
+                                def containerIP = sh(script: "docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' api-container", returnStdout: true).trim()
+                                echo "IP del contenedor: ${containerIP}"
+                                sh "curl -f http://${containerIP}:8083/activities"
+                                success = true
+                                break
+                            } catch (Exception e) {
+                                echo "Intento ${i + 1} fallido. Reintentando en 5 segundos..."
+                                sleep 5
+                            }
+                        }
+                        if (!success) {
+                            error 'La API no respondió después de varios intentos.'
+                        }
+                    } else {
+                        sh 'docker logs api-container'  // Ver logs en caso de fallo
+                        error 'El contenedor de la API no se está ejecutando correctamente.'
+                    }
+                }
+            }
+        }
+    }
+    post {
+        always {
+            // Detener y eliminar el contenedor después de las pruebas
+            sh 'docker stop api-container'
+            sh 'docker rm api-container'
+        }
+        success {
+            echo 'Pipeline completado exitosamente.'
+        }
+        failure {
+            echo 'Pipeline fallido.'
+        }
+    }
+}

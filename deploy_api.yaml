@@ -1,0 +1,21 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: api-image-d
+  labels:
+    estado: "1"
+spec:
+  selector:  # Define las etiquetas que el Deployment utilizará para gestionar los Pods
+    matchLabels:
+      app: api-image
+  replicas: 5  # Aquí va la cantidad de réplicas del deployment
+  template:   # Plantilla que define los Pods
+    metadata:
+      labels:
+        app: api-image
+    spec:
+      containers:
+      - name: apache  
+        image: tr3nes/api-image:latest
+        ports:
+        - containerPort: 8083

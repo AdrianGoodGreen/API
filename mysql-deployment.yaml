@@ -1,0 +1,31 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mysql-deployment
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mysql
+  template:
+    metadata:
+      labels:
+        app: mysql
+    spec:
+      containers:
+      - name: mysql
+        image: mysql:8.0
+        env:
+        - name: MYSQL_ROOT_PASSWORD
+          value: "password"  # Aquí defines la contraseña de root de MySQL
+        - name: MYSQL_DATABASE
+          value: "activitydb"  # Base de datos por defecto
+        ports:
+        - containerPort: 3306
+        volumeMounts:
+        - name: mysql-data
+          mountPath: /var/lib/mysql  # Aquí se montará el volumen
+      volumes:
+      - name: mysql-data
+        persistentVolumeClaim:
+          claimName: pv-claim  # PVC que ya tienes definido

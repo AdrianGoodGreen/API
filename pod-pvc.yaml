@@ -1,0 +1,19 @@
+#Funciona como un ingress
+apiVersion: v1
+kind: Pod
+metadata:
+  name: pv-pod
+spec:
+  volumes:
+    - name: pv-storage
+      persistentVolumeClaim:
+        claimName: pv-claim
+  containers:
+    - name: task-pv-container
+      image: nginx
+      ports:
+        - containerPort: 8083
+          name: "http-server"
+      volumeMounts:
+        - mountPath: "/prueba"
+          name: pv-storage

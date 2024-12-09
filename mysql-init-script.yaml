@@ -1,0 +1,31 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: init-db
+spec:
+  template:
+    spec:
+      containers:
+      - name: mysql
+        image: mysql:8.0
+        env:
+        - name: MYSQL_ROOT_PASSWORD
+          value: "password"
+        command:
+        - "/bin/sh"
+        - "-c"
+        - |
+          sleep 10s
+          mysql -h mysql-service -u root -ppassword -e "CREATE DATABASE IF NOT EXISTS activitydb;"
+          mysql -h mysql-service -u root -ppassword -e "USE activitydb; CREATE TABLE IF NOT EXISTS activities (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            name VARCHAR(255) NOT NULL,
+            description TEXT,
+            teacher_id INT NOT NULL,
+            enrolled_students JSON
+          );"
+          mysql -h mysql-service -u root -ppassword -e "USE activitydb; INSERT INTO activities (name, description, teacher_id, enrolled_students) VALUES 
+            ('Fútbol', 'Entrenamiento de fútbol para principiantes', 101, '[1, 2]'),
+            ('Pintura', 'Clases de pintura avanzada', 102, '[3]'),
+            ('Robótica', 'Introducción a la robótica', 103, '[]');"
+      restartPolicy: OnFailure
